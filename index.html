@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Codingal Dashboard</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#3b82f6;
+      --sidebar:#0f172a;
+      --sidebar-contrast:#0b1220;
+      --glass: rgba(255,255,255,0.6);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,var(--bg),#eef2ff);
+      color:#0f172a;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      font-size:14px;
+    }
+
+    /* Layout */
+    .app{
+      display:grid;
+      grid-template-columns:260px 1fr;
+      height:100vh;
+      gap:20px;
+      padding:20px;
+    }
+    @media (max-width:900px){
+      .app{grid-template-columns:1fr; padding:12px;}
+      .sidebar{position:fixed;left:-260px;top:0;height:100vh;z-index:40;transition:left .25s}
+      .sidebar.open{left:0}
+    }
+
+    /* Sidebar */
+    .sidebar{
+      background:linear-gradient(180deg,var(--sidebar),var(--sidebar-contrast));
+      color:#fff;
+      border-radius:12px;
+      padding:20px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      box-shadow:0 6px 20px rgba(2,6,23,0.4);
+    }
+    .brand{
+      display:flex;align-items:center;gap:12px;margin-bottom:6px;
+    }
+    .brand .logo{
+      width:44px;height:44px;background:var(--glass);border-radius:10px;display:grid;place-items:center;color:var(--sidebar);font-weight:700;
+    }
+    .brand h1{font-size:16px;margin:0}
+    .nav{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+    .nav a{
+      display:flex;gap:12px;align-items:center;padding:10px;border-radius:8px;color:rgba(255,255,255,0.9);text-decoration:none;font-weight:600;
+    }
+    .nav a:hover{background:rgba(255,255,255,0.06)}
+    .nav a .dot{width:8px;height:8px;border-radius:50%;background:#10b981;margin-left:auto;opacity:0.9}
+
+    /* Main area */
+    .main{
+      display:flex;flex-direction:column;gap:20px;
+      min-height:0; /* for flex container */
+    }
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .search{
+      display:flex;align-items:center;gap:8px;background:var(--card);padding:8px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(15,23,42,0.04);
+      width:100%;max-width:640px;
+    }
+    .search input{border:0;outline:none;background:transparent;font-size:14px;width:100%}
+    .actions{display:flex;align-items:center;gap:12px}
+
+    /* Cards */
+    .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    @media (max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:600px){.cards{grid-template-columns:1fr}}
+    .card{
+      background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(11,20,35,0.06);
+      display:flex;align-items:center;gap:12px;
+    }
+    .card .icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#e6f0ff,#dbeafe);display:grid;place-items:center;color:var(--accent);font-weight:700}
+    .card .meta{flex:1}
+    .card .meta .title{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .card .meta .value{font-size:20px;font-weight:700}
+
+    /* Layout for charts & table */
+    .grid{
+      display:grid;grid-template-columns:2fr 1fr;gap:14px;
+      align-items:start;
+    }
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    .panel{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(11,20,35,0.04)}
+    .panel h2{margin:0 0 12px 0;font-size:16px}
+    .chart-wrap{height:280px}
+
+    /* Table */
+    table{width:100%;border-collapse:collapse}
+    thead th{text-align:left;color:var(--muted);font-weight:600;padding:10px 8px;font-size:13px}
+    tbody td{padding:10px 8px;border-top:1px solid #f1f5f9}
+    .status{padding:6px 10px;border-radius:999px;font-weight:600;font-size:12px;background:#eef2ff;color:#0f172a;display:inline-block}
+
+    /* footer small */
+    .muted{color:var(--muted);font-size:13px}
+    .menu-btn{background:transparent;border:0;color:var(--sidebar);font-size:20px;padding:8px;border-radius:8px;display:none}
+    @media (max-width:900px){.menu-btn{display:inline-block}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <a href="stdent.html">back</a>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">C</div>
+        <div>
+          <div style="font-size:13px;font-weight:700">Codingal</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.75)">Instructor Dashboard</div>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Main">
+        <a href="#" class="active" aria-current="page">
+          <span>Dashboard</span>
+        </a>
+        <a href="#"><span>Students</span></a>
+        <a href="#"><span>Courses</span></a>
+        <a href="#"><span>Assignments</span></a>
+        <a href="#"><span>Reports</span></a>
+        <a href="#"><span>Settings</span></a>
+      </nav>
+
+      <div style="margin-top:auto;font-size:13px;color:rgba(255,255,255,0.85)">
+        <div style="margin-bottom:8px">Account</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div style="width:36px;height:36px;border-radius:10px;background:#fff;display:grid;place-items:center;color:var(--sidebar);font-weight:700">JD</div>
+          <div>
+            <div style="font-weight:700">Jane Doe</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.7)">Instructor</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:12px;width:100%">
+          <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">☰</button>
+          <div class="search" role="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="opacity:.6"><path d="M21 21l-4.35-4.35" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <input type="search" placeholder="Search students, courses, assignments..." />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button title="New" style="border:0;background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;font-weight:700">+ New</button>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="text-align:right">
+              <div style="font-weight:700">Jane Doe</div>
+              <div style="font-size:12px;color:var(--muted)">Instructor</div>
+            </div>
+            <div style="width:44px;height:44px;border-radius:10px;background:#fff;display:grid;place-items:center;color:var(--sidebar)">JD</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="cards" aria-label="Key metrics">
+        <div class="card">
+          <div class="icon">👥</div>
+          <div class="meta">
+            <div class="title">Students</div>
+            <div class="value" id="studentsCount">124</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="icon">📚</div>
+          <div class="meta">
+            <div class="title">Active Courses</div>
+            <div class="value" id="coursesCount">8</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="icon">📝</div>
+          <div class="meta">
+            <div class="title">Assignments Due</div>
+            <div class="value" id="assignmentsDue">12</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="icon">⭐</div>
+          <div class="meta">
+            <div class="title">Avg Score</div>
+            <div class="value" id="avgScore">88%</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid">
+        <div class="panel">
+          <h2>Weekly Activity</h2>
+          <div class="chart-wrap">
+            <canvas id="activityChart" style="width:100%;height:100%"></canvas>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:12px;color:var(--muted);font-size:13px">
+            <div>New signups: <strong id="newSignups">18</strong></div>
+            <div>Avg completion: <strong id="avgCompletion">72%</strong></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Course Distribution</h2>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="flex:1">
+              <canvas id="coursesDonut" style="width:100%;height:180px"></canvas>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <table>
+              <thead>
+                <tr><th>Recent Activity</th><th class="muted">When</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Leena submitted Assignment 4</td><td class="muted">2h ago</td></tr>
+                <tr><td>New student: Arjun</td><td class="muted">5h ago</td></tr>
+                <tr><td>Course "HTML Basics" created</td><td class="muted">1d ago</td></tr>
+                <tr><td>Assignment 2 graded</td><td class="muted">2d ago</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h2 style="margin:0 0 6px 0">Upcoming Deadlines</h2>
+          <div class="muted">Keep track of assignments due in the next 7 days</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:700;font-size:20px">12</div>
+          <div class="muted">items due</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Sidebar toggle for small screens
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    menuBtn && menuBtn.addEventListener('click', ()=> sidebar.classList.toggle('open'));
+
+    // Sample data (replace with real API calls)
+    const students = 124, courses = 8, assignmentsDue = 12, avgScore = 88;
+    document.getElementById('studentsCount').textContent = students;
+    document.getElementById('coursesCount').textContent = courses;
+    document.getElementById('assignmentsDue').textContent = assignmentsDue;
+    document.getElementById('avgScore').textContent = avgScore + '%';
+
+    // Activity Chart (Line)
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    const activityChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        datasets: [
+          {
+            label: 'Active Students',
+            data: [20, 28, 30, 42, 38, 50, 46],
+            borderColor: '#2563eb',
+            backgroundColor: (context) => {
+              const gradient = context.chart.ctx.createLinearGradient(0,0,0,200);
+              gradient.addColorStop(0, 'rgba(59,130,246,0.18)');
+              gradient.addColorStop(1, 'rgba(59,130,246,0.02)');
+              return gradient;
+            },
+            fill: true,
+            tension: 0.35,
+            pointRadius: 4,
+            pointBackgroundColor: '#fff',
+            pointBorderColor: '#2563eb'
+          }
+        ]
+      },
+      options: {
+        responsive:true,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{display:false}},
+          y:{grid:{color:'#f1f5f9'}, beginAtZero:true}
+        }
+      }
+    });
+
+    // Courses Donut
+    const donutCtx = document.getElementById('coursesDonut').getContext('2d');
+    const donut = new Chart(donutCtx, {
+      type: 'doughnut',
+      data:{
+        labels:['Web','Python','AI','Robotics','Others'],
+        datasets:[{
+          data:[28,22,18,16,16],
+          backgroundColor:['#60a5fa','#34d399','#f97316','#a78bfa','#f59e0b'],
+          hoverOffset:6
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{position:'bottom'}
+        },
+        cutout: '68%'
+      }
+    });
+
+    // Simple interactive example: update cards when clicking +New
+    document.querySelectorAll('.actions button')[0].addEventListener('click', ()=>{
+      const newStudents = Math.min(999, ++window._demoNewStudents || (window._demoNewStudents = students + 1));
+      document.getElementById('studentsCount').textContent = newStudents;
+    });
+  </script>
+</body>
+</html></div>
